@@ -7,9 +7,22 @@ Usage: python search.py "your query"
 import os
 import sys
 import json
-import requests
+import subprocess
 from pathlib import Path
 from typing import Optional, Dict, Any
+
+# Auto-install dependencies on first run
+try:
+    import requests
+except ImportError:
+    print("📦 Installing required dependencies...")
+    subprocess.check_call(
+        [sys.executable, "-m", "pip", "install", "-q", "requests"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL
+    )
+    import requests
+    print("✅ Dependencies installed successfully")
 
 
 def setup_config() -> Dict[str, str]:

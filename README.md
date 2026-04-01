@@ -15,13 +15,15 @@ git clone <repository-url> ~/.claude/skills/dify-search
 cp -r /path/to/dify-search ~/.claude/skills/dify-search
 ```
 
-2. **Setup dependencies (for manual script testing):**
+2. **Install dependencies (optional for manual script testing):**
 ```bash
 cd ~/.claude/skills/dify-search
 python3 -m venv venv
 source venv/bin/activate
-pip install requests
+pip install -r requirements.txt
 ```
+
+**Note:** Dependencies install automatically on first script run. Manual installation is only needed for development.
 
 3. **Done!** On first use, script will prompt for credentials.
 
@@ -35,25 +37,33 @@ No configuration needed - Claude will use the skill automatically when you menti
 
 **Option 1: Auto-setup (Recommended)**
 
-Just run the script - it will prompt for credentials on first use:
+Just run the script - dependencies and config setup happen automatically:
 ```bash
 cd ~/.claude/skills/dify-search
-python3 -m venv venv
-source venv/bin/activate
-pip install requests
 python scripts/search.py "закат на море"
-# Will prompt for DIFY_BASE_URL and DIFY_API_TOKEN
+# Will auto-install dependencies and prompt for:
+# - DIFY_BASE_URL (e.g., https://your-dify-instance.com)
+# - DIFY_API_TOKEN (e.g., app-xxxxx)
 ```
 
-**Option 2: Manual setup**
+Get credentials from: Dify → App Settings → API Access → API Key
 
-Create config file manually:
+**Option 2: Manual config setup**
+
+If you prefer to set up credentials manually:
 ```bash
 cd ~/.claude/skills/dify-search
 cp config/.env.example config/.env
-# Edit config/.env with your credentials
 nano config/.env
 ```
+
+Edit `.env` with your credentials:
+```bash
+DIFY_BASE_URL=https://your-dify-instance.com
+DIFY_API_TOKEN=app-your-token-here
+```
+
+**Security note:** Never commit `.env` to git! It's already in `.gitignore`.
 
 **For Claude Code skill usage:**
 
@@ -78,14 +88,14 @@ When you invoke this skill, Claude will have access to:
 ```
 dify-search/
 ├── SKILL.md              # Main skill documentation (read by Claude)
-├── README.md             # This file
+├── README.md             # This file (installation & usage)
+├── requirements.txt      # Python dependencies
 ├── .gitignore           # Git ignore patterns
 ├── config/
 │   ├── .env             # Your credentials (not committed)
-│   ├── .env.example     # Template for .env
-│   └── README.md        # Setup instructions
+│   └── .env.example     # Template for .env
 ├── scripts/
-│   └── search.py        # Helper script for searches
+│   └── search.py        # Helper script with auto-install
 ├── references/
 │   └── api-examples.md  # API examples and use cases
 └── cache/               # Cache directory (auto-created)
@@ -106,17 +116,15 @@ Claude will automatically:
 
 ## Manual Testing
 
-Use the helper script directly (make sure venv is activated):
+Use the helper script directly:
 ```bash
-source venv/bin/activate
-
-# Basic search
+# Dependencies install automatically on first run
 python scripts/search.py "your query"
 
 # Verbose mode
 python scripts/search.py "your query" --verbose
 
-# From Python
+# From Python (in venv if you installed manually)
 python
 >>> from scripts.search import search_paintings
 >>> result = search_paintings("закат на море", limit=5)
@@ -125,7 +133,7 @@ python
 ## Documentation
 
 - **SKILL.md** - Complete skill documentation for Claude
-- **config/README.md** - Configuration setup
+- **requirements.txt** - Python dependencies list
 - **references/api-examples.md** - API examples and patterns
 
 ## Development
