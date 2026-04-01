@@ -2,27 +2,67 @@
 
 AI-powered artwork search using Dify multimodal pipeline.
 
-## Quick Start
+## Installation
 
-1. **Setup configuration:**
+### For new agents/computers
+
+1. **Clone or copy skill to skills directory:**
 ```bash
-cd ~/.claude/skills/dify-search
-cp config/.env.example config/.env
-# Edit config/.env with your credentials
+# If you have git repository
+git clone <repository-url> ~/.claude/skills/dify-search
+
+# OR copy from existing installation
+cp -r /path/to/dify-search ~/.claude/skills/dify-search
 ```
 
-2. **Setup virtual environment (for using scripts):**
+2. **Setup dependencies (for manual script testing):**
 ```bash
+cd ~/.claude/skills/dify-search
 python3 -m venv venv
 source venv/bin/activate
 pip install requests
 ```
 
-3. **Test the skill:**
+3. **Done!** On first use, script will prompt for credentials.
+
+### For Claude Code
+
+Skill auto-loads from `~/.claude/skills/dify-search/SKILL.md`
+
+No configuration needed - Claude will use the skill automatically when you mention artwork search tasks.
+
+## Quick Start
+
+**Option 1: Auto-setup (Recommended)**
+
+Just run the script - it will prompt for credentials on first use:
 ```bash
+cd ~/.claude/skills/dify-search
+python3 -m venv venv
 source venv/bin/activate
+pip install requests
 python scripts/search.py "закат на море"
+# Will prompt for DIFY_BASE_URL and DIFY_API_TOKEN
 ```
+
+**Option 2: Manual setup**
+
+Create config file manually:
+```bash
+cd ~/.claude/skills/dify-search
+cp config/.env.example config/.env
+# Edit config/.env with your credentials
+nano config/.env
+```
+
+**For Claude Code skill usage:**
+
+No setup needed! Just invoke:
+```
+/dify-search найди картины с закатом
+```
+
+Claude will handle everything automatically.
 
 ## What This Skill Provides
 
