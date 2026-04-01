@@ -33,6 +33,31 @@ This is a **multimodal artwork search system** that combines:
 4. Jina multimodal reranking (optional)
 5. Format results as markdown with images
 
+## Quick Start for Claude Code
+
+When this skill is invoked with a search query, execute:
+
+```bash
+cd ~/.claude/skills/dify-search && venv/bin/python scripts/search.py "USER_QUERY"
+```
+
+**Important:**
+- Always use `venv/bin/python` (not system python)
+- Quote the query to preserve spaces
+- Default parameters: `clip-large`, `multimodal reranking`, `limit=20`
+
+**Example:**
+```bash
+cd ~/.claude/skills/dify-search && venv/bin/python scripts/search.py "девушки в шляпах Андрея Елецкого"
+```
+
+**Output includes:**
+- Refined query (GPT-processed English version)
+- Top N results with images, similarity scores, metadata
+- Performance metrics (elapsed time, tokens, steps)
+
+**Note:** CLI currently supports only query parameter. For custom parameters (search_mode, limit, etc.), parameters must be hardcoded in the script (see Issue: CLI parameters support needed).
+
 ## Config
 
 API credentials stored in `config/.env`:
