@@ -1,0 +1,20 @@
+# Environment and secrets
+config/.env
+
+# Virtual environment
+venv/
+
+# Cache
+cache/
+*.pyc
+__pycache__/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
