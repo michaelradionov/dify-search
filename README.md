@@ -145,6 +145,81 @@ To update the skill:
 
 Changes take effect immediately in new Claude sessions.
 
+## Comparing CLIP Models
+
+### CRITICAL: Visual Evaluation is Required
+
+**Never compare CLIP models using only similarity scores!** You must visually inspect actual images to evaluate quality.
+
+#### Why Scores Are Misleading
+
+- **Higher score ≠ Better result**: A model can assign 0.677 to an irrelevant abstract painting while giving 0.537 to a perfect match
+- **Quantity ≠ Quality**: More results doesn't mean better understanding of the query
+- **Reranking can amplify errors**: Jina reranker works on top of CLIP results - garbage in, garbage out
+
+#### Proper Comparison Methodology
+
+1. **Run both models** on the same query set
+2. **Download top 3-5 images** from each model's results
+3. **Visually inspect** which images better match the query intent
+4. **Consider conceptual understanding**, not just literal matching
+
+#### Example: "сумеречное лиминальное пространство" (twilight liminal space)
+
+**clip-base results:**
+- Top result (0.677): Abstract painting with red lines ❌ - **Completely irrelevant**
+- Found 8 results total
+- Matched literally on "сумерки" (twilight) keyword, ignored "liminal space" concept
+
+**clip-large results:**
+- Top result (0.537): Twilight landscape with trees - Not perfect but closer
+- #3 (0.517): Archway with couple - **Best match!** ✅ Archway = liminal/transitional space
+- Found only 3 results, but more conceptually relevant
+- **Winner on this query** - understood the abstract concept better
+
+#### Example: "игра света и тени" (play of light and shadow)
+
+**clip-large results:**
+- Top result (0.823): "Satyr and Nymph" with dramatic chiaroscuro ✅
+- Understood as artistic technique (light/shadow contrast)
+- Found works with **dramatic lighting** as artistic element
+
+**clip-base results:**
+- Top result (0.819): "Walking Light" - sunlight through trees
+- Literal interpretation: where there's light, there's shadow
+- Found **literal shadows**, not artistic light play
+
+**Winner: clip-large** - deeper artistic understanding
+
+#### Using the Comparison Script
+
+```bash
+cd ~/.claude/skills/dify-search
+venv/bin/python scripts/compare_models.py
+```
+
+This script:
+- Tests 10 predefined queries with both models
+- Saves results to `comparison_results.json`
+- Prints side-by-side comparison report
+- **But you still need to manually check images!**
+
+#### When to Use Which Model
+
+**Use clip-large when:**
+- Query involves abstract/artistic concepts
+- You need deeper semantic understanding
+- Willing to trade some recall for precision
+- Queries like: "игра света и тени", "драматичное освещение", conceptual searches
+
+**Use clip-base when:**
+- Query is concrete and visual
+- Need faster results (slightly)
+- Query has clear visual features
+- Queries like: "закат над водой", "отражения в воде", "зеленый пейзаж"
+
+**Default recommendation:** Start with **clip-large** for better semantic understanding, fall back to clip-base only if results are poor.
+
 ## Troubleshooting
 
 **"Config file not found"**

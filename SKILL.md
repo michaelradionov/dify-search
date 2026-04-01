@@ -44,7 +44,8 @@ cd ~/.claude/skills/dify-search && venv/bin/python scripts/search.py "USER_QUERY
 **Important:**
 - Always use `venv/bin/python` (not system python)
 - Quote the query to preserve spaces
-- Default parameters: `clip-large`, `multimodal reranking`, `limit=20`
+- Default parameters: `clip-large` (recommended!), `multimodal reranking`, `limit=20`
+- Don't switch to `clip-base` unless you have evidence it performs better for your query
 
 **Example:**
 ```bash
@@ -129,12 +130,18 @@ Content-Type: application/json
 **Модель CLIP для image embeddings**
 
 Options:
-- `"clip-base"` - openai/clip-vit-base-patch32 (faster, less accurate)
-- `"clip-large"` - openai/clip-vit-large-patch14 (slower, more accurate)
+- `"clip-base"` - openai/clip-vit-base-patch32 (literal matching, good for concrete visuals)
+- `"clip-large"` - openai/clip-vit-large-patch14 (better semantic understanding, handles abstract concepts)
 
 **When to use:**
-- Use `clip-large` for production/best results
-- Use `clip-base` for testing/speed
+- **Use `clip-large` by default** - better at abstract/artistic queries, deeper understanding
+- Use `clip-base` only if clip-large gives poor results on very literal visual queries
+- ⚠️ **Don't compare models by scores alone!** See "Comparing CLIP Models" section for proper methodology
+
+**Examples:**
+- `clip-large` wins: "игра света и тени" (understands chiaroscuro as technique)
+- `clip-base` wins: "зеленый пейзаж" (literal color-based search)
+- Both equal: "закат над водой" (concrete visual)
 
 ### 4. `search_mode` (select, default: "image")
 **Тип векторного поиска**
@@ -389,6 +396,104 @@ When testing the pipeline:
 4. **Validate Scores** - Manually check if high-scored results actually match the query
 5. **Edge Cases** - Test abstract queries, multi-concept queries, negations
 
+## Comparing CLIP Models
+
+### CRITICAL: Visual Evaluation is Required
+
+**⚠️ NEVER compare CLIP models using only similarity scores!**
+
+When evaluating which CLIP model performs better, you MUST:
+1. Download and visually inspect the actual images
+2. Compare how well they match the query intent
+3. Assess conceptual understanding, not just literal matching
+
+### Why Scores Are Misleading
+
+Real examples from testing:
+
+**Query: "сумеречное лиминальное пространство" (twilight liminal space)**
+
+- `clip-base` top result: **0.677 score**
+  - Image: Abstract painting with red lines on green/yellow background
+  - **Completely irrelevant!** ❌ No liminal space concept at all
+  - Matched literally on "сумерки" keyword, ignored "liminal space"
+
+- `clip-large` result #3: **0.517 score** (lower!)
+  - Image: Archway with couple at twilight
+  - **Perfect match!** ✅ Archway = transitional/liminal space
+  - Understood the abstract concept correctly
+
+**Lesson:** Lower score found the better result! Don't trust numbers alone.
+
+### Comparison Methodology
+
+**Wrong way:**
+```python
+# ❌ BAD: Comparing only scores
+if clip_base_score > clip_large_score:
+    print("clip-base is better")
+```
+
+**Right way:**
+```python
+# ✅ GOOD: Visual inspection required
+1. Run both models on test queries
+2. Download top 3-5 images from each
+3. Manually evaluate which images match query intent
+4. Compare conceptual vs literal understanding
+```
+
+### Model Characteristics
+
+**clip-large (openai/clip-vit-large-patch14):**
+- Better at **abstract/artistic concepts**
+- Deeper semantic understanding
+- Examples where it wins:
+  - "игра света и тени" → Found chiaroscuro lighting technique
+  - "лиминальное пространство" → Understood transitional spaces
+  - Artistic/conceptual queries
+
+**clip-base (openai/clip-vit-base-patch32):**
+- Better at **literal/concrete visuals**
+- Faster (slightly)
+- Examples where it wins:
+  - "закат над водой" → Sunset over water (literal)
+  - "зеленый пейзаж" → Green landscape (color-based)
+  - Simple visual queries
+
+### Using the Comparison Script
+
+```bash
+cd ~/.claude/skills/dify-search
+venv/bin/python scripts/compare_models.py
+```
+
+This script:
+- Tests both models on 10 predefined queries
+- Saves results to `comparison_results.json`
+- Shows side-by-side comparison
+- **BUT you still need to manually inspect images!**
+
+### Recommendation
+
+**Default: Use clip-large**
+- Better semantic understanding
+- Handles abstract concepts well
+- Same speed as clip-base in practice
+
+**When to use clip-base:**
+- Only if clip-large gives poor results
+- Very literal visual queries
+- When you need maximum speed
+
+### Key Takeaway
+
+**Similarity scores measure embedding distance, not human perception of relevance.**
+
+A model that assigns high scores to wrong results is worse than one that assigns lower scores to correct results.
+
+Always validate with your eyes, not with numbers.
+
 ## Troubleshooting
 
 ### Issue: No results returned
@@ -415,18 +520,24 @@ When testing the pipeline:
 ## Integration Tips
 
 ### For Production
-- Always use `clip-large` and `multimodal` reranking
+- **Always use `clip-large`** (better semantic understanding, same speed)
+- Use `multimodal` reranking for best quality
 - Set reasonable `limit` (10-20)
 - Monitor `elapsed_time` and `total_tokens`
 - Log queries and results for quality analysis
+- **Don't auto-select model by query type** - clip-large handles both abstract and literal well
 
 ### For Development
-- Use `clip-base` for faster iteration
-- Start with `jina_reranking="none"` to debug vector search
+- Start with `clip-large` and test if results are good
+- Only try `clip-base` if clip-large fails on specific query
+- Use `jina_reranking="none"` to debug vector search
 - Use `limit=50` to see more candidates
+- **Always visually inspect images when comparing models!**
 
 ### For Analysis
-- Export results with scores to CSV
-- Compare different parameter combinations
+- **Never compare models by scores alone** - download and view images
+- Export results with scores AND image URLs
+- Compare different parameter combinations with visual validation
 - Track which queries fail to find good matches
-- Monitor similarity score distribution
+- Monitor similarity score distribution but don't trust it blindly
+- Use `scripts/compare_models.py` as starting point, then manual review
