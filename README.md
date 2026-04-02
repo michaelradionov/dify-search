@@ -95,11 +95,68 @@ dify-search/
 │   ├── .env             # Your credentials (not committed)
 │   └── .env.example     # Template for .env
 ├── scripts/
-│   └── search.py        # Helper script with auto-install
+│   ├── search.py        # Main search script with CLI parameters
+│   ├── quick_compare.py # Compare CLIP models for single query
+│   ├── compare_models.py # Compare models on 10 test queries
+│   └── test_refiner.py  # Test GPT query refiner
 ├── references/
 │   └── api-examples.md  # API examples and use cases
 └── cache/               # Cache directory (auto-created)
 ```
+
+## Scripts Overview
+
+### search.py
+**Purpose:** Main search interface with full parameter control
+
+**When to use:**
+- Regular artwork search
+- Testing specific parameter combinations
+- Production searches with custom settings
+
+**User request examples:**
+- "найди картины с закатом"
+- "найди портреты, используй clip-base"
+- "поиск абстракций, показать только 5 результатов"
+
+### quick_compare.py
+**Purpose:** Quick A/B comparison of CLIP models for ONE query
+
+**When to use:**
+- Testing which model works better for specific query
+- Quick quality check before production
+- Debugging model differences
+
+**User request examples:**
+- "сравни clip-large и clip-base по запросу 'лиминальное пространство'"
+- "какая модель лучше для запроса 'игра света и тени'?"
+- "протестируй обе CLIP модели на 'закат над морем'"
+
+### compare_models.py
+**Purpose:** Comprehensive comparison on 10 predefined test queries
+
+**When to use:**
+- Evaluating overall model performance
+- Quality assurance after workflow changes
+- Generating comparison reports
+
+**User request examples:**
+- "запусти полное сравнение CLIP моделей"
+- "протестируй обе модели на всех тестовых запросах"
+- "сделай бенчмарк clip-large vs clip-base"
+
+### test_refiner.py
+**Purpose:** Test GPT query refiner's author extraction and query processing
+
+**When to use:**
+- Debugging query refinement
+- Testing author name extraction
+- Evaluating GPT refiner quality
+
+**User request examples:**
+- "протестируй, как refiner обрабатывает 'закат Айвазовского'"
+- "проверь извлечение автора из запроса"
+- "как GPT refiner преобразует запросы с фамилиями художников?"
 
 ## Usage in Claude Code
 
@@ -116,18 +173,72 @@ Claude will automatically:
 
 ## Manual Testing
 
-Use the helper script directly:
+### Basic Search
+
+Use the search script with CLI parameters:
 ```bash
-# Dependencies install automatically on first run
-python scripts/search.py "your query"
+# Basic search (uses defaults: clip-large, limit=20, multimodal reranking)
+venv/bin/python scripts/search.py "закат на море"
 
-# Verbose mode
-python scripts/search.py "your query" --verbose
+# Verbose mode with debug info
+venv/bin/python scripts/search.py "закат на море" --verbose
 
-# From Python (in venv if you installed manually)
-python
->>> from scripts.search import search_paintings
->>> result = search_paintings("закат на море", limit=5)
+# With specific CLIP model
+venv/bin/python scripts/search.py "закат на море" --clip-model clip-base
+
+# Custom parameters (⚠️ changing limit affects reranking!)
+venv/bin/python scripts/search.py "закат" --limit 10 --search-mode both
+
+# See all options
+venv/bin/python scripts/search.py --help
+```
+
+### CLIP Model Comparison
+
+**Quick comparison for single query** (recommended for testing):
+```bash
+# Compare models for one specific query
+venv/bin/python scripts/quick_compare.py "сумеречное лиминальное пространство"
+
+# Custom query
+venv/bin/python scripts/quick_compare.py "ваш запрос"
+```
+
+**Full comparison suite** (tests 10 predefined queries):
+```bash
+# Run all test queries through both models
+venv/bin/python scripts/compare_models.py
+# Saves results to comparison_results.json
+```
+
+### Testing Query Refiner
+
+Test how GPT refiner extracts authors and processes queries:
+```bash
+# Test single query
+venv/bin/python scripts/test_refiner.py "закат Айвазовского"
+
+# Test multiple queries
+venv/bin/python scripts/test_refiner.py "закат Айвазовского" "девушки в шляпах Андрея Елецкого"
+# Saves results to test_results.json
+```
+
+### From Python
+
+```python
+from scripts.search import search_paintings
+
+# Basic search
+result = search_paintings("закат на море")
+
+# With custom parameters
+result = search_paintings(
+    query="закат",
+    clip_model="clip-large",
+    search_mode="image",
+    limit=20,
+    jina_reranking="multimodal"
+)
 ```
 
 ## Documentation
@@ -191,8 +302,21 @@ Changes take effect immediately in new Claude sessions.
 
 **Winner: clip-large** - deeper artistic understanding
 
-#### Using the Comparison Script
+#### Using the Comparison Scripts
 
+**For quick single-query comparison:**
+```bash
+cd ~/.claude/skills/dify-search
+venv/bin/python scripts/quick_compare.py "your query"
+```
+
+This script:
+- Compares both models on ONE specific query
+- Shows side-by-side results immediately
+- Faster for targeted testing
+- **Still requires visual image inspection!**
+
+**For comprehensive multi-query comparison:**
 ```bash
 cd ~/.claude/skills/dify-search
 venv/bin/python scripts/compare_models.py
@@ -201,7 +325,7 @@ venv/bin/python scripts/compare_models.py
 This script:
 - Tests 10 predefined queries with both models
 - Saves results to `comparison_results.json`
-- Prints side-by-side comparison report
+- Prints detailed comparison report
 - **But you still need to manually check images!**
 
 #### When to Use Which Model

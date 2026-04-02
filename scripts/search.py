@@ -218,19 +218,78 @@ def print_results(result: Dict[str, Any]) -> None:
 
 def main():
     """CLI entry point."""
-    if len(sys.argv) < 2:
-        print("Usage: python search.py <query> [--verbose]")
+    if len(sys.argv) < 2 or "--help" in sys.argv or "-h" in sys.argv:
+        print("Usage: python search.py <query> [options]")
+        print("\nOptions:")
+        print("  --clip-model MODEL      CLIP model: clip-large (default) or clip-base")
+        print("  --search-mode MODE      Search mode: image (default), text, both, none")
+        print("  --jina-reranking TYPE   Reranking: multimodal (default), text, none")
+        print("  --limit N               Number of results (default: 20)")
+        print("  --relevance-threshold T Relevance threshold 0-1 (default: 0.5)")
+        print("  --no-refiner            Disable GPT query refiner")
+        print("  --verbose, -v           Verbose output")
+        print("\n⚠️  WARNING: Changing defaults (especially --limit) may drastically affect results!")
         print("\nExample:")
         print('  python search.py "закат на море"')
-        print('  python search.py "portrait of a woman" --verbose')
+        print('  python search.py "portrait" --clip-model clip-base --limit 10')
         sys.exit(1)
 
     # Parse arguments
-    verbose = "--verbose" in sys.argv or "-v" in sys.argv
-    query = " ".join(arg for arg in sys.argv[1:] if not arg.startswith("-"))
+    args = sys.argv[1:]
+
+    # Extract options
+    verbose = "--verbose" in args or "-v" in args
+    use_refiner = "--no-refiner" not in args
+
+    clip_model = "clip-large"
+    search_mode = "image"
+    jina_reranking = "multimodal"
+    limit = 20
+    relevance_treshold = 0.5
+
+    i = 0
+    query_parts = []
+    while i < len(args):
+        arg = args[i]
+
+        if arg == "--clip-model" and i + 1 < len(args):
+            clip_model = args[i + 1]
+            i += 2
+        elif arg == "--search-mode" and i + 1 < len(args):
+            search_mode = args[i + 1]
+            i += 2
+        elif arg == "--jina-reranking" and i + 1 < len(args):
+            jina_reranking = args[i + 1]
+            i += 2
+        elif arg == "--limit" and i + 1 < len(args):
+            limit = int(args[i + 1])
+            i += 2
+        elif arg == "--relevance-threshold" and i + 1 < len(args):
+            relevance_treshold = float(args[i + 1])
+            i += 2
+        elif arg in ["--verbose", "-v", "--no-refiner"]:
+            i += 1
+        else:
+            query_parts.append(arg)
+            i += 1
+
+    query = " ".join(query_parts)
+
+    if not query:
+        print("❌ Error: Query is required")
+        sys.exit(1)
 
     try:
-        result = search_paintings(query, verbose=verbose)
+        result = search_paintings(
+            query=query,
+            use_refiner=use_refiner,
+            clip_model=clip_model,
+            search_mode=search_mode,
+            jina_reranking=jina_reranking,
+            relevance_treshold=relevance_treshold,
+            limit=limit,
+            verbose=verbose
+        )
         print_results(result)
     except FileNotFoundError as e:
         print(f"❌ {e}")

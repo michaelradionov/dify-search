@@ -41,10 +41,22 @@ When this skill is invoked with a search query, execute:
 cd ~/.claude/skills/dify-search && venv/bin/python scripts/search.py "USER_QUERY"
 ```
 
+**⚠️ CRITICAL - Default Parameters:**
+```python
+use_refiner=True
+clip_model="clip-large"
+search_mode="image"
+jina_reranking="multimodal"
+relevance_treshold=0.5
+limit=20  # CRITICAL: Changing this drastically alters reranking results!
+clip_fallback_treshold=0.0
+```
+
 **Important:**
 - Always use `venv/bin/python` (not system python)
 - Quote the query to preserve spaces
-- Default parameters: `clip-large` (recommended!), `multimodal reranking`, `limit=20`
+- **DO NOT change default parameters without explicit user request**
+- **Especially `limit` - it critically affects reranking quality!**
 - Don't switch to `clip-base` unless you have evidence it performs better for your query
 
 **Example:**
@@ -57,7 +69,34 @@ cd ~/.claude/skills/dify-search && venv/bin/python scripts/search.py "девуш
 - Top N results with images, similarity scores, metadata
 - Performance metrics (elapsed time, tokens, steps)
 
-**Note:** CLI currently supports only query parameter. For custom parameters (search_mode, limit, etc.), parameters must be hardcoded in the script (see Issue: CLI parameters support needed).
+**Available CLI options:**
+```bash
+# All options (use defaults unless user explicitly requests changes!)
+venv/bin/python scripts/search.py "query" \
+  --clip-model clip-large \      # clip-large or clip-base
+  --search-mode image \           # image, text, both, none
+  --jina-reranking multimodal \   # multimodal, text, none
+  --limit 20 \                    # CRITICAL: affects reranking!
+  --relevance-threshold 0.5 \     # 0-1 threshold
+  --no-refiner \                  # disable GPT refiner
+  --verbose                       # show debug info
+```
+
+**For Claude Code - Error Prevention Rules:**
+
+1. **NEVER change parameters without explicit user request**
+   - Especially `--limit` - it drastically changes results!
+   - Use defaults unless user asks for specific values
+
+2. **When comparing models:**
+   - Use identical parameters for both models
+   - Only change `--clip-model` between runs
+   - Use comparison script: `venv/bin/python scripts/compare_models.py`
+
+3. **When user asks to compare:**
+   - Ask if they want specific parameters or use defaults
+   - If unsure - use defaults!
+   - Visually inspect images, don't trust scores alone
 
 ## Config
 
@@ -424,6 +463,32 @@ Real examples from testing:
   - Understood the abstract concept correctly
 
 **Lesson:** Lower score found the better result! Don't trust numbers alone.
+
+### ⚠️ CRITICAL: Use Identical Parameters!
+
+**When comparing CLIP models, you MUST use IDENTICAL parameters:**
+
+```python
+# ✅ CORRECT: Same parameters, only clip_model differs
+search_paintings(query="...", clip_model="clip-large", limit=20, ...)
+search_paintings(query="...", clip_model="clip-base", limit=20, ...)
+
+# ❌ WRONG: Different limit values
+search_paintings(query="...", clip_model="clip-large", limit=20, ...)
+search_paintings(query="...", clip_model="clip-base", limit=5, ...)  # INVALID!
+```
+
+**Why this matters:**
+- `limit` drastically affects reranking behavior
+- Different limits = comparing different workflows, not models
+- Example: `limit=5` may skip good results that appear in top-20
+- Jina reranker behaves differently with different candidate pool sizes
+
+**Use the comparison script:**
+```bash
+cd ~/.claude/skills/dify-search
+venv/bin/python scripts/compare_models.py  # Tests both models with identical params
+```
 
 ### Comparison Methodology
 
