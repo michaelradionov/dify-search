@@ -93,10 +93,17 @@ venv/bin/python scripts/search.py "query" \
    - Only change `--clip-model` between runs
    - Use comparison script: `venv/bin/python scripts/compare_models.py`
 
-3. **When user asks to compare:**
+3. **🚨 ALWAYS DOWNLOAD AND VIEW IMAGES WHEN COMPARING MODELS! 🚨**
+   - **NEVER compare models by scores alone!**
+   - Download top 3-5 images from each model using WebFetch/Read tools
+   - Visually assess which images actually match the query
+   - Scores are misleading - a model with lower scores may have better results!
+   - See "Comparing CLIP Models" section for detailed methodology
+
+4. **When user asks to compare:**
    - Ask if they want specific parameters or use defaults
    - If unsure - use defaults!
-   - Visually inspect images, don't trust scores alone
+   - **MANDATORY: Download and view images before making conclusions**
 
 ## Config
 
@@ -437,14 +444,20 @@ When testing the pipeline:
 
 ## Comparing CLIP Models
 
-### CRITICAL: Visual Evaluation is Required
+### 🚨 CRITICAL: Visual Evaluation is MANDATORY 🚨
 
-**⚠️ NEVER compare CLIP models using only similarity scores!**
+**⚠️ NEVER EVER compare CLIP models using only similarity scores!**
+
+**For Claude Code agents: This is a BLOCKING REQUIREMENT:**
+1. **ALWAYS download and view images** using Read/WebFetch tools
+2. **NEVER make conclusions based on scores alone**
+3. **ALWAYS compare actual visual content** of top 3-5 results from each model
 
 When evaluating which CLIP model performs better, you MUST:
-1. Download and visually inspect the actual images
+1. Download and visually inspect the actual images (use Read tool or curl + Read)
 2. Compare how well they match the query intent
 3. Assess conceptual understanding, not just literal matching
+4. Check for false positives (irrelevant results with high scores)
 
 ### Why Scores Are Misleading
 
@@ -463,6 +476,25 @@ Real examples from testing:
   - Understood the abstract concept correctly
 
 **Lesson:** Lower score found the better result! Don't trust numbers alone.
+
+---
+
+**Query: "мотоцикл" (motorcycle)**
+
+- `clip-large` unique results included:
+  - ❌ "Всадник" - sculpture of rider on a **HORSE** (not motorcycle!)
+  - ❌ "Саксофон" - woman on a **BICYCLE** playing saxophone
+  - ❌ "Велосипедист" - cyclist sculpture
+  - ❌ "Русское поле" - horse riders
+  - **Problem:** Understood "motorcycle" too broadly as "any vehicle with rider"
+
+- `clip-base` filtered correctly:
+  - ✅ Found unique result "Электрик" (#3, score 0.823) - man on pole with motorcycle below
+  - ✅ No horses or bicycles in results
+  - ✅ More precise literal understanding
+  - **Winner for this concrete visual query!**
+
+**Lesson:** CLIP-large's "better semantic understanding" can be a bug for concrete queries! Visual inspection revealed clip-base was more accurate despite having fewer results.
 
 ### ⚠️ CRITICAL: Use Identical Parameters!
 
@@ -520,11 +552,13 @@ if clip_base_score > clip_large_score:
 
 **clip-base (openai/clip-vit-base-patch32):**
 - Better at **literal/concrete visuals**
+- More precise filtering - avoids over-generalization
 - Faster (slightly)
 - Examples where it wins:
+  - "мотоцикл" → Found motorcycles only, filtered out horses/bicycles (clip-large included them!)
   - "закат над водой" → Sunset over water (literal)
   - "зеленый пейзаж" → Green landscape (color-based)
-  - Simple visual queries
+  - Concrete object queries where precision matters
 
 ### Using the Comparison Script
 
@@ -542,14 +576,18 @@ This script:
 ### Recommendation
 
 **Default: Use clip-large**
-- Better semantic understanding
-- Handles abstract concepts well
+- Better semantic understanding for abstract/artistic queries
+- Handles conceptual queries well
 - Same speed as clip-base in practice
 
 **When to use clip-base:**
-- Only if clip-large gives poor results
+- Concrete object queries ("мотоцикл", "красная машина", etc.)
+- When precision matters more than broad matching
+- If clip-large includes too many false positives
 - Very literal visual queries
 - When you need maximum speed
+
+**⚠️ Important:** Don't assume clip-large is always better! For concrete visual queries, clip-base often provides more precise results. **Always visually inspect images to decide!**
 
 ### Key Takeaway
 
